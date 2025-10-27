@@ -47,11 +47,19 @@ lite_dev: generate-secrets
 
 	# install ffmpeg needed to create TNs
 	docker compose exec -T drupal with-contenv bash -lc 'apk --update add ffmpeg'
-	docker-compose restart drupal
+
+	# Restart drupal properly (avoid WSL2 bind mount issues)
+	docker compose stop drupal
+	docker compose up -d drupal
 
 	# install the site
 	$(MAKE) compose-up
 	docker compose exec -T drupal with-contenv bash -lc 'chown -R nginx:nginx /var/www/drupal/ ; su nginx -s /bin/bash -c "composer install"'
+
+	# Install matomo module (required by config)
+	docker compose exec -T drupal with-contenv bash -lc 'chown -R nginx:nginx /var/www/drupal/ ; su nginx -s /bin/bash -c "composer require drupal/matomo"'
+	docker compose exec -T drupal with-contenv bash -lc 'chmod 644 /var/www/drupal/web/sites/default/settings.php && chown nginx:nginx /var/www/drupal/web/sites/default/settings.php'
+
 	$(MAKE) lite-finalize ENVIRONMENT=local
 
 	# Set config media_thumbnails_video

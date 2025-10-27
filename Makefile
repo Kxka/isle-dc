@@ -731,7 +731,7 @@ compose-up:
 .PHONY: wait-for-drupal-locally
 .SILENT: wait-for-drupal-locally
 wait-for-drupal-locally:
-	while ! curl -s -o /dev/null -m 5 https://$(DOMAIN)/ ; do \
+	while ! curl -k -s -o /dev/null -m 5 https://$(DOMAIN)/ ; do \
 		echo "Waiting for https://$(DOMAIN) to be available..."; \
 		sleep 1; \
 	done
