@@ -557,7 +557,7 @@ update-settings-php:
 	docker compose exec -T drupal with-contenv bash -lc "if [ ! -f /var/www/drupal/web/sites/default/settings.php ]; then cp /var/www/drupal/web/sites/default/default.settings.php  /var/www/drupal/web/sites/default/settings.php; fi"
 	docker compose exec -T drupal with-contenv bash -lc "for_all_sites update_settings_php"
 	# Make sure the host user can read the settings.php files after they have been updated.
-	if [ -d ./codebase ]; then sudo find ./codebase -type f -name "settings.php" -exec chown $(shell id -u):101 {} \;; fi
+	if [ -d ./codebase ]; then find ./codebase -type f -name "settings.php" -exec chmod 644 {} \; 2>/dev/null || true; fi
 
 
 # Created by the standard profile, need to be deleted to import a site that was

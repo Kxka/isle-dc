@@ -48,16 +48,17 @@ lite_dev: generate-secrets
 	# install ffmpeg needed to create TNs
 	docker compose exec -T drupal with-contenv bash -lc 'apk --update add ffmpeg'
 
-	# Restart drupal properly (avoid WSL2 bind mount issues)
-	docker compose stop drupal
-	docker compose up -d drupal
+	# Reload PHP-FPM to pick up new extensions (avoid container restart due to WSL2 bind mount issues)
+	docker compose exec -T drupal with-contenv bash -lc 'pkill -USR2 php-fpm83 || true'
 
 	# install the site
 	$(MAKE) compose-up
-	docker compose exec -T drupal with-contenv bash -lc 'chown -R nginx:nginx /var/www/drupal/ ; su nginx -s /bin/bash -c "composer install"'
+	# Fix settings.php permissions before composer install (if it exists)
+	docker compose exec -T drupal with-contenv bash -lc 'chown -R nginx:nginx /var/www/drupal/ && if [ -f /var/www/drupal/web/sites/default/settings.php ]; then chmod u+w /var/www/drupal/web/sites/default/settings.php; fi'
+	docker compose exec -T drupal with-contenv bash -lc 'su nginx -s /bin/bash -c "composer install"'
 
 	# Install matomo module (required by config)
-	docker compose exec -T drupal with-contenv bash -lc 'chown -R nginx:nginx /var/www/drupal/ ; su nginx -s /bin/bash -c "composer require drupal/matomo"'
+	docker compose exec -T drupal with-contenv bash -lc 'su nginx -s /bin/bash -c "composer require drupal/matomo"'
 	docker compose exec -T drupal with-contenv bash -lc 'chmod 644 /var/www/drupal/web/sites/default/settings.php && chown nginx:nginx /var/www/drupal/web/sites/default/settings.php'
 
 	$(MAKE) lite-finalize ENVIRONMENT=local
